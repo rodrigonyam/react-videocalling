@@ -1,0 +1,105 @@
+.video-call {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #0d0d1a;
+}
+
+/* ── Status bar ── */
+.connection-status {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.65rem 1.25rem;
+  background: #111;
+  font-size: 0.85rem;
+  color: #aaa;
+  border-bottom: 1px solid #222;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.status-dot.connected    { background: #4caf50; }
+.status-dot.disconnected { background: #f44336; }
+
+.peer-count {
+  margin-left: auto;
+  color: #4fc3f7;
+  font-size: 0.8rem;
+}
+
+/* ── Video grid ── */
+.videos-grid {
+  flex: 1;
+  display: grid;
+  padding: 1rem;
+  gap: 1rem;
+  overflow: hidden;
+  align-items: stretch;
+}
+
+/* Layout based on number of remote peers */
+.videos-grid.peers-0 { grid-template-columns: 1fr; }
+.videos-grid.peers-1 { grid-template-columns: repeat(2, 1fr); }
+.videos-grid.peers-2 { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 1fr); }
+.videos-grid.peers-3 { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 1fr); }
+
+.video-wrapper {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #1a1a2e;
+  min-height: 0;
+}
+
+.video-wrapper video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.video-label {
+  position: absolute;
+  bottom: 0.5rem;
+  left: 0.75rem;
+  background: rgba(0, 0, 0, 0.55);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  color: #eee;
+  pointer-events: none;
+}
+
+/* ── Controls bar ── */
+.controls {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: #111;
+  border-top: 1px solid #222;
+}
+
+.controls button {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: none;
+  background: #2a2a4a;
+  color: #fff;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.controls button:hover    { background: #3a3a6a; }
+.controls button:active   { transform: scale(0.95); }
+.controls button.btn-active { background: #4a4a6a; }
+
+.controls button.btn-danger       { background: #c62828; }
+.controls button.btn-danger:hover { background: #e53935; }
