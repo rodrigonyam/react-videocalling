@@ -1,0 +1,50 @@
+services:
+  # ── Signaling server (Node) ──────────────────────────────────────
+  - type: web
+    name: videocall-server
+    runtime: node
+    rootDir: server
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000          # Render assigns this automatically; kept explicit for clarity
+      - key: CLIENT_URL
+        fromService:
+          name: videocall-client
+          type: web
+          property: host      # auto-populated with the client service's URL
+      # Optional — add your TURN server details here for production WebRTC:
+      # - key: TURN_URLS
+      #   value: turn:yourserver.com:3478
+      # - key: TURN_SECRET
+      #   value: your-secret
+
+  # ── React client (Static Site) ───────────────────────────────────
+  - type: web
+    name: videocall-client
+    runtime: static
+    rootDir: client
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    headers:
+      # Required for SharedArrayBuffer / future features; harmless otherwise
+      - path: /*
+        name: Cross-Origin-Opener-Policy
+        value: same-origin
+      - path: /*
+        name: Cross-Origin-Embedder-Policy
+        value: require-corp
+    routes:
+      # SPA fallback — all paths serve index.html
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_SOCKET_URL
+        fromService:
+          name: videocall-server
+          type: web
+          property: host      # auto-populated with the server service's URL
