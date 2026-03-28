@@ -103,3 +103,41 @@
 
 .controls button.btn-danger       { background: #c62828; }
 .controls button.btn-danger:hover { background: #e53935; }
+
+/* ── Error screen ── */
+.error-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  gap: 1rem;
+  background: #0d0d1a;
+  padding: 2rem;
+  text-align: center;
+}
+
+.error-icon {
+  font-size: 3rem;
+}
+
+.error-message {
+  color: #ef9a9a;
+  font-size: 1rem;
+  max-width: 380px;
+  line-height: 1.5;
+}
+
+.error-screen button {
+  margin-top: 0.5rem;
+  padding: 0.65rem 1.5rem;
+  border-radius: 8px;
+  border: none;
+  background: #2a2a4a;
+  color: #eee;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.error-screen button:hover { background: #3a3a6a; }

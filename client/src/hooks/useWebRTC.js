@@ -16,6 +16,7 @@ export function useWebRTC(roomId) {
   const [isConnected, setIsConnected] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [isCameraOff, setIsCameraOff] = useState(false);
+  const [error, setError] = useState(null);
 
   const socketRef = useRef(null);
   const peerConnectionsRef = useRef({}); // { peerId: RTCPeerConnection }
@@ -84,6 +85,13 @@ export function useWebRTC(roomId) {
         });
       } catch (err) {
         console.error("Could not get user media:", err);
+        if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+          setError("Camera/microphone access was denied. Please allow permissions and try again.");
+        } else if (err.name === "NotFoundError") {
+          setError("No camera or microphone found. Please connect a device and try again.");
+        } else {
+          setError("Could not access camera/microphone: " + err.message);
+        }
         return;
       }
 
@@ -108,10 +116,16 @@ export function useWebRTC(roomId) {
       // We joined: initiate offers to all peers already in the room
       socket.on("room-users", async (peerIds) => {
         for (const peerId of peerIds) {
-          const pc = createPeerConnection(peerId);
-          const offer = await pc.createOffer();
-          await pc.setLocalDescription(offer);
-          socket.emit("offer", { to: peerId, offer });
+          try {
+            const pc = createPeerConnection(peerId);
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            socket.emit("offer", { to: peerId, offer });
+          } catch (err) {
+            console.error(`Failed to create offer for peer ${peerId}:`, err);
+            peerConnectionsRef.current[peerId]?.close();
+            delete peerConnectionsRef.current[peerId];
+          }
         }
       });
 
@@ -122,20 +136,32 @@ export function useWebRTC(roomId) {
 
       // We received an offer from a peer → create answer
       socket.on("offer", async ({ from, offer }) => {
-        const pc = createPeerConnection(from);
-        await pc.setRemoteDescription(new RTCSessionDescription(offer));
-        await flushPendingCandidates(from);
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
-        socket.emit("answer", { to: from, answer });
+        try {
+          const pc = createPeerConnection(from);
+          await pc.setRemoteDescription(new RTCSessionDescription(offer));
+          await flushPendingCandidates(from);
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
+          socket.emit("answer", { to: from, answer });
+        } catch (err) {
+          console.error(`Failed to handle offer from peer ${from}:`, err);
+          peerConnectionsRef.current[from]?.close();
+          delete peerConnectionsRef.current[from];
+        }
       });
 
       // We sent an offer and got the answer back
       socket.on("answer", async ({ from, answer }) => {
         const pc = peerConnectionsRef.current[from];
         if (pc) {
-          await pc.setRemoteDescription(new RTCSessionDescription(answer));
-          await flushPendingCandidates(from);
+          try {
+            await pc.setRemoteDescription(new RTCSessionDescription(answer));
+            await flushPendingCandidates(from);
+          } catch (err) {
+            console.error(`Failed to handle answer from peer ${from}:`, err);
+            pc.close();
+            delete peerConnectionsRef.current[from];
+          }
         }
       });
 
@@ -204,6 +230,7 @@ export function useWebRTC(roomId) {
     isConnected,
     isMuted,
     isCameraOff,
+    error,
     toggleMute,
     toggleCamera,
   };

@@ -26,9 +26,20 @@ export default function VideoCall({ roomId, onLeave }) {
     isConnected,
     isMuted,
     isCameraOff,
+    error,
     toggleMute,
     toggleCamera,
   } = useWebRTC(roomId);
+
+  if (error) {
+    return (
+      <div className="error-screen">
+        <p className="error-icon">⚠️</p>
+        <p className="error-message">{error}</p>
+        <button onClick={onLeave}>Go Back</button>
+      </div>
+    );
+  }
 
   const remoteEntries = Object.entries(remoteStreams);
   const peerCount = remoteEntries.length;
