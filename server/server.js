@@ -1,10 +1,54 @@
 const { createServer } = require("http");
 const { Server } = require("socket.io");
+const crypto = require("crypto");
 
-const httpServer = createServer();
+// Optional TURN configuration — set these env vars in production:
+//   TURN_URLS   comma-separated TURN URIs  e.g. "turn:yourserver.com:3478,turns:yourserver.com:5349"
+//   TURN_SECRET shared secret configured on your COTURN / TURN server
+const TURN_SECRET = process.env.TURN_SECRET || "";
+const TURN_URLS = process.env.TURN_URLS || "";
+const CLIENT_ORIGIN = process.env.CLIENT_URL || "http://localhost:3000";
+
+function generateEphemeralTurnCredentials() {
+  const ttl = 12 * 3600; // 12-hour expiry
+  const username = String(Math.floor(Date.now() / 1000) + ttl);
+  const credential = crypto
+    .createHmac("sha1", TURN_SECRET)
+    .update(username)
+    .digest("base64");
+  return { username, credential };
+}
+
+const FALLBACK_ICE = [
+  { urls: "stun:stun.l.google.com:19302" },
+  { urls: "stun:stun1.l.google.com:19302" },
+];
+
+const httpServer = createServer((req, res) => {
+  // ICE server config endpoint — consumed by the client before each call
+  if (req.method === "GET" && req.url === "/api/ice-servers") {
+    res.setHeader("Access-Control-Allow-Origin", CLIENT_ORIGIN);
+    res.setHeader("Content-Type", "application/json");
+
+    const iceServers = [...FALLBACK_ICE];
+
+    if (TURN_SECRET && TURN_URLS) {
+      const { username, credential } = generateEphemeralTurnCredentials();
+      const urls = TURN_URLS.split(",").map((u) => u.trim());
+      iceServers.push({ urls, username, credential });
+    }
+
+    res.end(JSON.stringify({ iceServers }));
+    return;
+  }
+
+  res.writeHead(404);
+  res.end();
+});
+
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.CLIENT_URL || "http://localhost:3000",
+    origin: CLIENT_ORIGIN,
     methods: ["GET", "POST"],
   },
 });

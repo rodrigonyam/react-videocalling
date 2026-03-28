@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { io } from "socket.io-client";
 
-const ICE_SERVERS = {
+const STUN_ONLY = {
   iceServers: [
     { urls: "stun:stun.l.google.com:19302" },
     { urls: "stun:stun1.l.google.com:19302" },
@@ -9,6 +9,18 @@ const ICE_SERVERS = {
 };
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL ?? "http://localhost:3001";
+
+async function fetchIceServers() {
+  try {
+    const res = await fetch(`${SOCKET_URL}/api/ice-servers`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const { iceServers } = await res.json();
+    return { iceServers };
+  } catch (err) {
+    console.warn("Could not fetch ICE servers, falling back to STUN only:", err);
+    return STUN_ONLY;
+  }
+}
 
 export function useWebRTC(roomId) {
   const [localStream, setLocalStream] = useState(null);
@@ -22,6 +34,7 @@ export function useWebRTC(roomId) {
   const peerConnectionsRef = useRef({}); // { peerId: RTCPeerConnection }
   const localStreamRef = useRef(null);
   const pendingCandidatesRef = useRef({}); // { peerId: RTCIceCandidateInit[] }
+  const iceConfigRef = useRef(STUN_ONLY);
 
   // Flush ICE candidates that arrived before remote description was set
   const flushPendingCandidates = useCallback(async (peerId) => {
@@ -35,7 +48,7 @@ export function useWebRTC(roomId) {
 
   const createPeerConnection = useCallback(
     (peerId) => {
-      const pc = new RTCPeerConnection(ICE_SERVERS);
+      const pc = new RTCPeerConnection(iceConfigRef.current);
 
       pc.onicecandidate = ({ candidate }) => {
         if (candidate) {
@@ -77,6 +90,9 @@ export function useWebRTC(roomId) {
     let active = true;
 
     async function start() {
+      // Fetch ICE server config (includes TURN credentials when configured)
+      iceConfigRef.current = await fetchIceServers();
+
       let stream;
       try {
         stream = await navigator.mediaDevices.getUserMedia({
