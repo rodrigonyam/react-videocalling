@@ -28,6 +28,8 @@ export function useWebRTC(roomId) {
   const [isConnected, setIsConnected] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [isCameraOff, setIsCameraOff] = useState(false);
+  const [isOnHold, setIsOnHold] = useState(false);
+  const [messages, setMessages] = useState([]); // { id, from, text, ts, isLocal }
   const [error, setError] = useState(null);
 
   const socketRef = useRef(null);
@@ -203,6 +205,14 @@ export function useWebRTC(roomId) {
           return next;
         });
       });
+
+      // Incoming chat message from a peer
+      socket.on("chat-message", ({ from, text }) => {
+        setMessages((prev) => [
+          ...prev,
+          { id: `${Date.now()}-${from}`, from, text, ts: Date.now(), isLocal: false },
+        ]);
+      });
     }
 
     start();
@@ -221,6 +231,8 @@ export function useWebRTC(roomId) {
       setIsConnected(false);
       setIsMuted(false);
       setIsCameraOff(false);
+      setIsOnHold(false);
+      setMessages([]);
     };
   }, [roomId, createPeerConnection, flushPendingCandidates]);
 
@@ -240,14 +252,47 @@ export function useWebRTC(roomId) {
     }
   }, []);
 
+  // Hold: disable all local tracks; resume: restore to individual mute/camera states
+  const toggleHold = useCallback(() => {
+    const stream = localStreamRef.current;
+    if (!stream) return;
+    setIsOnHold((prev) => {
+      const entering = !prev;
+      stream.getAudioTracks().forEach((t) => {
+        t.enabled = entering ? false : !isMuted;
+      });
+      stream.getVideoTracks().forEach((t) => {
+        t.enabled = entering ? false : !isCameraOff;
+      });
+      return entering;
+    });
+  }, [isMuted, isCameraOff]);
+
+  const sendMessage = useCallback(
+    (text) => {
+      const clean = text.trim().slice(0, 500);
+      if (!clean || !socketRef.current) return;
+      socketRef.current.emit("chat-message", { roomId, text: clean });
+      setMessages((prev) => [
+        ...prev,
+        { id: `${Date.now()}-local`, from: "me", text: clean, ts: Date.now(), isLocal: true },
+      ]);
+    },
+    [roomId]
+  );
+
   return {
     localStream,
     remoteStreams,
     isConnected,
     isMuted,
     isCameraOff,
+    isOnHold,
+    messages,
     error,
     toggleMute,
     toggleCamera,
+    toggleHold,
+    sendMessage,
   };
 }

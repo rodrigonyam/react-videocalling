@@ -27,9 +27,48 @@
 .status-dot.disconnected { background: #f44336; }
 
 .peer-count {
-  margin-left: auto;
   color: #4fc3f7;
   font-size: 0.8rem;
+}
+
+.status-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.recording-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #ef9a9a;
+  font-size: 0.78rem;
+}
+
+.rec-dot {
+  width: 8px;
+  height: 8px;
+  background: #e53935;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.rec-dot.pulsing {
+  animation: pulse-rec 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse-rec {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.15; }
+}
+
+/* ── Call body (video grid + chat side by side) ── */
+.call-body {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
 }
 
 /* ── Video grid ── */
@@ -47,6 +86,10 @@
 .videos-grid.peers-1 { grid-template-columns: repeat(2, 1fr); }
 .videos-grid.peers-2 { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 1fr); }
 .videos-grid.peers-3 { grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 1fr); }
+.videos-grid.peers-4 { grid-template-columns: repeat(3, 1fr); }
+.videos-grid.peers-5 { grid-template-columns: repeat(3, 1fr); }
+.videos-grid.peers-6 { grid-template-columns: repeat(3, 1fr); }
+.videos-grid.peers-7 { grid-template-columns: repeat(4, 1fr); }
 
 .video-wrapper {
   position: relative;
@@ -78,21 +121,36 @@
 /* ── Controls bar ── */
 .controls {
   display: flex;
+  align-items: center;
   justify-content: center;
-  gap: 1rem;
-  padding: 1rem;
+  gap: 0.4rem;
+  padding: 0.75rem 1rem;
   background: #111;
   border-top: 1px solid #222;
+  flex-wrap: wrap;
+}
+
+.controls-group {
+  display: flex;
+  gap: 0.4rem;
+  padding: 0 0.6rem;
+  border-right: 1px solid #2a2a4a;
+}
+
+/* Remove divider from last group (leave button follows) */
+.controls-group:last-of-type {
+  border-right: none;
 }
 
 .controls button {
-  width: 52px;
-  height: 52px;
+  position: relative;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   border: none;
   background: #2a2a4a;
   color: #fff;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   cursor: pointer;
   transition: background 0.2s, transform 0.1s;
 }
@@ -100,6 +158,53 @@
 .controls button:hover    { background: #3a3a6a; }
 .controls button:active   { transform: scale(0.95); }
 .controls button.btn-active { background: #4a4a6a; }
+
+.controls button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  transform: none;
+}
+.controls button:disabled:hover { background: #2a2a4a; }
+
+/* WhatsApp share button */
+.controls button.btn-whatsapp {
+  background: #1a6b35;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+.controls button.btn-whatsapp:hover { background: #25a24e; }
+
+/* Recording active — pulsing red ring */
+.controls button.btn-recording {
+  background: #c62828;
+  box-shadow: 0 0 0 3px rgba(198, 40, 40, 0.35);
+}
+.controls button.btn-recording:hover { background: #e53935; }
+
+/* Stop recording */
+.controls button.btn-stop-rec       { background: #e65100; }
+.controls button.btn-stop-rec:hover { background: #f57c00; }
+
+/* Save recording */
+.controls button.btn-save       { background: #2e7d32; }
+.controls button.btn-save:hover { background: #388e3c; }
+
+/* Unread message badge */
+.badge {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  background: #e53935;
+  color: #fff;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  font-size: 0.62rem;
+  line-height: 16px;
+  text-align: center;
+  pointer-events: none;
+}
 
 .controls button.btn-danger       { background: #c62828; }
 .controls button.btn-danger:hover { background: #e53935; }

@@ -89,6 +89,14 @@ io.on("connection", (socket) => {
     if (to && candidate) io.to(to).emit("ice-candidate", { from: socket.id, candidate });
   });
 
+  socket.on("chat-message", ({ roomId, text }) => {
+    if (!roomId || typeof text !== "string") return;
+    if (!socket.rooms.has(roomId)) return; // must be a member of that room
+    const clean = text.trim().slice(0, 500);
+    if (!clean) return;
+    socket.to(roomId).emit("chat-message", { from: socket.id, text: clean });
+  });
+
   socket.on("disconnecting", () => {
     for (const roomId of socket.rooms) {
       if (rooms[roomId]) {

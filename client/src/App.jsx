@@ -1,10 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import VideoCall from "./components/VideoCall";
 import "./App.css";
 
 export default function App() {
   const [input, setInput] = useState("");
   const [activeRoom, setActiveRoom] = useState(null);
+
+  // Auto-join if a ?room= param is present (e.g. from a WhatsApp share link)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const room = params.get("room")?.trim();
+    if (room) setActiveRoom(room);
+  }, []);
 
   const joinRoom = () => {
     const room = input.trim();
